@@ -1,0 +1,114 @@
+kubeadm 操作
+	kubeadm init/reset 
+	初始化时虚拟机cpu核数要>1
+	swap要关掉： sudo swapoff -a
+	可以先测试镜像是否拉的下来
+	kubeadm config image pull
+	查看需要的镜像列表 
+	kubeadm config image list 
+可以设置kubeadm init --config xxx.yaml 来修改镜像地址
+
+不能翻墙的话要到dockerhub的mirrorgooglecontainers去下载指定镜像，tag成需要的名。
+
+kubeadm init 后按照提示操作
+
+  mkdir -p $HOME/.kube                                                                                                                                                               
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config                                                                                                                           
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config      
+
+至此 kubectl 就可以正常用了
+
+kubectl get node 
+会看到NotReady
+kubectl describe node 
+会看到类似的错误
+Ready   False ... KubeletNotReady  runtime network not ready: NetworkReady=false reason:NetworkPluginNotReady message:docker: network plugin is not ready: cni config uninitialized
+是网络错误
+
+解决网络问题
+# kubectl apply -f https://git.io/weave-kube-1.6
+kubectl apply -f /mnt/hgfs/share/weave-kube-1.6
+
+
+
+taint 标记污点使master不能部署pod
+# kubectl taint nodes node1 foo=bar:NoSchedule
+# kubectl taint nodes --all node-role.kubernetes.io/master-
+
+部署dashboard
+# $ kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+# $ kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
+# $ wget https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
+# $ sed -i 's/k8s.gcr.io/googlecontainer/g' kubernetes-dashboard.yaml
+$ kubectl apply -f /mnt/hgfs/share/tips/kubernetes-dashboard.yaml
+
+
+
+安装持久化插件rook
+$ kubectl create namespace rook-ceph
+
+$ wget https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/operator.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/operator.yaml
+
+$ wget https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/cluster.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/cluster.yaml
+
+虚拟机重启后可能会起不来，要看日志。
+systemctl status kubelet查看kubelet状态
+journalctl -xefu kubelet 查看systemd日志发现真正的错误原因是
+cat /proc/swaps 检查果然Swap没有被关闭
+
+# 关闭Swap，机器重启后不生效
+swapoff -a
+
+# 修改/etc/fstab永久关闭Swap
+cp -p /etc/fstab /etc/fstab.bak$(date '+%Y%m%d%H%M%S')
+# Redhat
+sed -i "s/\/dev\/mapper\/rhel-swap/\#\/dev\/mapper\/rhel-swap/g" /etc/fstab
+# CentOS
+sed -i "s/\/dev\/mapper\/centos-swap/\#\/dev\/mapper\/centos-swap/g" /etc/fstab
+# 修改后重新挂载全部挂载点
+mount -a
+
+# 查看Swap
+free -m
+cat /proc/swaps
+
+
+在Kubernetes集群master和nodes上禁用Swap后，运行下面命令重启Kubelet：
+systemctl daemon-reload
+systemctl restart kubelet
+
+本次问题是swap没关，导致启动失败.
+可以直接改/etc/fstab文件，将swap行注释掉
+
+
+sudo apt install polipo
+然后编辑配置文件：
+sudo vim /etc/polipo/config
+内容如下：
+logSyslog = true
+logFile = /var/log/polipo/polipo.log
+proxyAddress = "0.0.0.0"
+socksParentProxy = "127.0.0.1:8888"
+socksProxyType = socks5
+chunkHighMark = 50331648
+objectHighMark = 16384
+serverMaxSlots = 64
+serverSlots = 16
+serverSlots1 = 32
+接着启动服务：
+sudo /etc/init.d/polipo restart 
+
+polipo 默认监听8123端口
+
+docker 设置代理
+$ locate docker.service
+vim /lib/systemd/system/docker.service
+[Service]下增加
+Environment=HTTP_PROXY=http://127.0.0.1:8123/
+Environment=HTTPS_PROXY=http://127.0.0.1:8123/
+Environment=NO_PROXY=localhost,127.0.0.1,m1empwb1.mirror.aliyuncs.com,docker.io,registry.cn-hangzhou.aliyuncs.com
+
+
+

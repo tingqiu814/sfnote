@@ -1,0 +1,4 @@
+shadowsocks ubuntu 安装默认不支持chacha20-ietf-poly1305 加密算法
+
+ubuntu 刷新dns
+sudo service networking restart

@@ -1,0 +1,10 @@
+
+setting -> keyboard -> add customer shotcurts
+gnome-screenshot -a
+
+设置capslock 映射esc
+https://askubuntu.com/questions/1059663/remapping-caps-lock-to-escape-in-ubuntu-18-04-bionic
+安装tweak
+sudo apt install gnome-tweak-tool
+win -> 打开tweak -> Keyboard & Mouse -> Additional Layout Options -> Caps Lock key behavior.
+

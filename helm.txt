@@ -1,0 +1,6 @@
+heml-cli install
+https://github.com/helm/helm/releases 
+下载二进制文件 mv bin/xxx /usr/local/bin/
+
+heml tiller install 
+

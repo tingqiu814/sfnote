@@ -1,0 +1,12 @@
+#!/bin/bash 
+
+nohup bash /mnt/hgfs/share/sslocal.start 2>&1 &
+
+#kubeadm reset
+#kubeadm init
+#
+#sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+#sudo chown $(id -u):$(id -g) $HOME/.kube/config
+#
+#kubectl apply -f /mnt/hgfs/share/weave-daemonset-k8s-1.7.yaml
+
