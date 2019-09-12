@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: "2019-09-06T09:28:17Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  labels:
+    app: innocent-quetzal-mysql
+    chart: mysql-1.3.1
+    heritage: Tiller
+    release: innocent-quetzal
+  name: innocent-quetzal-mysql
+  namespace: default
+  resourceVersion: "108162"
+  selfLink: /api/v1/namespaces/default/persistentvolumeclaims/innocent-quetzal-mysql
+  uid: 49fce60d-eca9-4561-bcf3-e4dad05c67f6
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+  volumeMode: Filesystem
+status:
+  phase: Pending
+

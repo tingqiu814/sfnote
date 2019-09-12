@@ -47,11 +47,18 @@ $ kubectl apply -f /mnt/hgfs/share/tips/kubernetes-dashboard.yaml
 安装持久化插件rook
 $ kubectl create namespace rook-ceph
 
-$ wget https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/operator.yaml
-$ kubectl apply -f https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/operator.yaml
+# $ wget https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/operator.yaml
+# $ kubectl apply -f https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/operator.yaml
+$ kubectl apply -f /mnt/hgfs/share/tips/operator.yaml 
 
 $ wget https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/cluster.yaml
 $ kubectl apply -f https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/cluster.yaml
+
+helm 安装 rook
+helm install --namespace rook-ceph-system rook-beta/rook-ceph --name rook-ceph
+
+
+
 
 虚拟机重启后可能会起不来，要看日志。
 systemctl status kubelet查看kubelet状态

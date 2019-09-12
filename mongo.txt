@@ -15,3 +15,386 @@ $ mongo
 > db.test.save( { tecadmin: 100 } )
 > db.test.find()
 { "_id" : ObjectId("52b0dc8285f8a8071cbb5daf"), "tecadmin" : 100 }
+
+
+mongo 创建数据库
+> use db_name
+不存在创建，存在就切
+
+> show dbs 
+显示db列表
+
+导出
+$ mongodump -h host --port port -d db_name -o save_file_patch
+
+还原库
+$ mongorestore -d test /home/mongodb/test #test这个数据库的备份路径
+
+连接
+$ mongo --host 127.0.0.1 --port 27017
+
+
+
+连接： 
+mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+
+
+mongodb:// 这是固定的格式，必须要指定。
+username:password@ 可选项，如果设置，在连接数据库服务器之后，驱动都会尝试登陆这个数据库
+host1 必须的指定至少一个host, host1 是这个URI唯一要填写的。它指定了要连接服务器的地址。如果要连接复制集，请指定多个主机地址。
+portX 可选的指定端口，如果不填，默认为27017
+/database 如果指定username:password@，连接并验证登陆指定数据库。若不指定，默认打开 test 数据库。
+?options 是连接选项。如果不使用/database，则前面需要加上/。所有连接选项都是键值对name=value，键值对之间通过&或;（分号）隔开
+
+
+
+
+$ mongo
+> mogodb://admin:123456@localhost/
+
+
+更多连接实例
+连接本地数据库服务器，端口是默认的。
+mongodb://localhost
+使用用户名fred，密码foobar登录localhost的admin数据库。
+mongodb://fred:foobar@localhost
+使用用户名fred，密码foobar登录localhost的baz数据库。
+mongodb://fred:foobar@localhost/baz
+连接 replica pair, 服务器1为example1.com服务器2为example2。
+mongodb://example1.com:27017,example2.com:27017
+连接 replica set 三台服务器 (端口 27017, 27018, 和27019):
+mongodb://localhost,localhost:27018,localhost:27019
+连接 replica set 三台服务器, 写入操作应用在主服务器 并且分布查询到从服务器。
+mongodb://host1,host2,host3/?slaveOk=true
+直接连接第一个服务器，无论是replica set一部分或者主服务器或者从服务器。
+mongodb://host1,host2,host3/?connect=direct;slaveOk=true
+当你的连接服务器有优先级，还需要列出所有服务器，你可以使用上述连接方式。
+安全模式连接到localhost:
+mongodb://localhost/?safe=true
+以安全模式连接到replica set，并且等待至少两个复制服务器成功写入，超时时间设置为2秒。
+mongodb://host1,host2,host3/?safe=true;w=2;wtimeoutMS=2000
+
+
+基本操作
+创建库：
+> use mydb
+查看当前db
+> db
+显示所有db
+> show dbs
+这个时候没有显示你刚才添加的db， 需要插入点数据才能显示。空的数据库不显示。
+> db.mydb.insert({"hello":"world"})
+WriteResult({ "nInserted" : 1 })
+这个时候再show dbs就有了
+
+
+删除库：
+db.dropDatabase()
+
+
+删除集合
+db.collection.drop()
+> use runoob
+switched to db runoob
+> db.createCollection("runoob")     # 先创建集合，类似数据库中的表
+> show tables
+runoob
+> db.runoob.drop()
+true
+> show tables
+
+
+创建集合
+db.createCollection(name, options)
+> db.createCollection("runoob")
+{ "ok" : 1 }
+
+
+> db.createCollection("mycol", {capped:true, autoIndexId:true, size:61432800, max:1000})
+{
+        "note" : "the autoIndexId option is deprecated and will be removed in a future release",
+        "ok" : 1
+}
+在 MongoDB 中，你不需要创建集合。当你插入一些文档时，MongoDB 会自动创建集合。
+> db.mycol2.insert({"name":"hello"})
+WriteResult({ "nInserted" : 1 })
+> show tables
+mycol
+mycol2
+
+
+
+
+查看已有集合
+> show collections
+runoob
+> show tables;
+runoob
+
+
+删除集合
+db.collection.drop()
+>db.mycol2.drop()
+true
+
+
+插入数据
+db.COLLECTION_NAME.insert(document) 也可以用save()
+> db.mycol.insert({structkey:"value", key2:"value2"})
+WriteResult({ "nInserted" : 1 })
+
+
+查看结果
+> db.mycol.find()
+{ "_id" : ObjectId("5d7a3217ffdc4f7c0681f9cf"), "structkey" : "value", "key2" : "value2" }
+也可以将数据定义为一个变量：
+> document=({title:'mongodb','tit':'value2'})
+{ "title" : "mongodb", "tit" : "value2" }
+> db.mycol.insert(document)
+WriteResult({ "nInserted" : 1 })
+
+
+更新：
+db.collection.update(
+   <query>,
+   <update>,
+   {
+     upsert: <boolean>,
+     multi: <boolean>,
+     writeConcern: <document>
+   }
+)
+参数说明：
+
+
+query : update的查询条件，类似sql update查询内where后面的。
+update : update的对象和一些更新的操作符（如$,$inc...）等，也可以理解为sql update查询内set后面的
+upsert : 可选，这个参数的意思是，如果不存在update的记录，是否插入objNew,true为插入，默认是false，不插入。
+multi : 可选，mongodb 默认是false,只更新找到的第一条记录，如果这个参数为true,就把按条件查出来多条记录全部更新。
+writeConcern :可选，抛出异常的级别。
+
+
+> db.mycol.update({"title":"mongodb"}, {$set: {"title":"MongoDB"}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+
+
+> db.mycol.update({"title":"mongodb"}, {$set: {"title":"MongoDB"}},{multi:true})
+WriteResult({ "nMatched" : 2, "nUpserted" : 0, "nModified" : 2 })
+
+
+save() 方法通过传入的文档来替换已有文档。语法格式如下：
+db.collection.save(
+   <document>,
+   {
+     writeConcern: <document>
+   }
+)
+参数说明：
+
+
+document : 文档数据。
+writeConcern :可选，抛出异常的级别。
+
+
+> db.mycol.save({"_id":ObjectId("5d7a3404ffdc4f7c0681f9d1"), "tttt":"rrrr"})
+
+
+
+
+只更新第一条记录：
+
+
+db.col.update( { "count" : { $gt : 1 } } , { $set : { "test2" : "OK"} } );
+全部更新：
+
+
+db.col.update( { "count" : { $gt : 3 } } , { $set : { "test2" : "OK"} },false,true );
+只添加第一条：
+
+
+db.col.update( { "count" : { $gt : 4 } } , { $set : { "test5" : "OK"} },true,false );
+全部添加进去:
+
+
+db.col.update( { "count" : { $gt : 5 } } , { $set : { "test5" : "OK"} },true,true );
+全部更新：
+
+
+db.col.update( { "count" : { $gt : 15 } } , { $inc : { "count" : 1} },false,true );
+只更新第一条记录：
+
+
+db.col.update( { "count" : { $gt : 10 } } , { $inc : { "count" : 1} },false,false );
+
+
+MongoDB 删除文档
+remove() 方法的基本语法格式如下所示：
+db.collection.remove(
+   <query>,
+   {
+     justOne: <boolean>,
+     writeConcern: <document>
+   }
+)
+> db.mycol.drop()
+true
+> db.mycol.find()
+> db.mycol.insert({"title":"mongo","key":"val"})
+WriteResult({ "nInserted" : 1 })
+> db.mycol.insert({"title":"mongo","key":"val2"})
+WriteResult({ "nInserted" : 1 })
+> db.mycol.insert({"title":"mongo","key":"val23"})
+WriteResult({ "nInserted" : 1 })
+> db.mycol.find()
+{ "_id" : ObjectId("5d7a3bbb647923e0acb4fef7"), "title" : "mongo", "key" : "val" }
+{ "_id" : ObjectId("5d7a3bbe647923e0acb4fef8"), "title" : "mongo", "key" : "val2" }
+{ "_id" : ObjectId("5d7a3bc1647923e0acb4fef9"), "title" : "mongo", "key" : "val23" }
+> db.mycol.update({"title":"mongo"},{$set:{"title":"Monto"}})
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.mycol.find()
+{ "_id" : ObjectId("5d7a3bbb647923e0acb4fef7"), "title" : "Monto", "key" : "val" }
+{ "_id" : ObjectId("5d7a3bbe647923e0acb4fef8"), "title" : "mongo", "key" : "val2" }
+{ "_id" : ObjectId("5d7a3bc1647923e0acb4fef9"), "title" : "mongo", "key" : "val23" }
+> db.mycol.save({"_id" : ObjectId("5d7a3bbb647923e0acb4fef7"), "title" : "Monto", "key" : "val1"} )
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.mycol.remove()
+2019-09-12T20:38:16.044+0800 E QUERY    [js] Error: remove needs a query :
+DBCollection.prototype._parseRemove@src/mongo/shell/collection.js:362:1
+DBCollection.prototype.remove@src/mongo/shell/collection.js:389:18
+@(shell):1:1
+> db.mycol.remove({ "_id" : ObjectId("5d7a3bc1647923e0acb4fef9")})
+WriteResult({ "nRemoved" : 1 })
+> db.mycol.find()
+{ "_id" : ObjectId("5d7a3bbb647923e0acb4fef7"), "title" : "Monto", "key" : "val1" }
+{ "_id" : ObjectId("5d7a3bbe647923e0acb4fef8"), "title" : "mongo", "key" : "val2" }
+
+
+
+
+
+
+查询
+db.collection.find(query, projection)
+query ：可选，使用查询操作符指定查询条件
+projection ：可选，使用投影操作符指定返回的键。查询时返回文档中所有键值， 只需省略该参数即可（默认省略）。
+
+
+如果你需要以易读的方式来读取数据，可以使用 pretty() 方法，语法格式如下：
+>db.col.find().pretty()
+> db.mycol.find().pretty()
+{
+        "_id" : ObjectId("5d7a3bbb647923e0acb4fef7"),
+        "title" : "Monto",
+        "key" : "val1"
+}
+{
+        "_id" : ObjectId("5d7a3bbe647923e0acb4fef8"),
+        "title" : "mongo",
+        "key" : "val2"
+}
+操作
+格式
+范例
+RDBMS中的类似语句
+等于
+{<key>:<value>}
+db.col.find({"by":"菜鸟教程"}).pretty()
+where by = '菜鸟教程'
+小于
+{<key>:{$lt:<value>}}
+db.col.find({"likes":{$lt:50}}).pretty()
+where likes < 50
+小于或等于
+{<key>:{$lte:<value>}}
+db.col.find({"likes":{$lte:50}}).pretty()
+where likes <= 50
+大于
+{<key>:{$gt:<value>}}
+db.col.find({"likes":{$gt:50}}).pretty()
+where likes > 50
+大于或等于
+{<key>:{$gte:<value>}}
+db.col.find({"likes":{$gte:50}}).pretty()
+where likes >= 50
+不等于
+{<key>:{$ne:<value>}}
+db.col.find({"likes":{$ne:50}}).pretty()
+where likes != 50
+MongoDB AND 条件
+MongoDB 的 find() 方法可以传入多个键(key)，每个键(key)以逗号隔开，即常规 SQL 的 AND 条件。
+
+
+语法格式如下：
+
+
+>db.col.find({key1:value1, key2:value2}).pretty()
+
+
+MongoDB OR 条件
+MongoDB OR 条件语句使用了关键字 $or,语法格式如下：
+
+
+>db.col.find(
+   {
+      $or: [
+         {key1: value1}, {key2:value2}
+      ]
+   }
+).pretty()
+
+
+比较符：
+db.col.find({likes : {$lte : 150}})
+类似于SQL语句：
+Select * from col where likes <= 150;
+
+
+模糊查询
+
+
+查询 title 包含"教"字的文档：
+
+
+db.col.find({title:/教/})
+查询 title 字段以"教"字开头的文档：
+
+
+db.col.find({title:/^教/})
+查询 titl e字段以"教"字结尾的文档：
+
+
+db.col.find({title:/教$/})
+
+
+类型
+
+
+db.col.find({"title" : {$type : 2}})
+或
+db.col.find({"title" : {$type : 'string'}})
+
+
+MongoDB Limit() 方法
+>db.COLLECTION_NAME.find().limit(NUMBER)
+> db.mycol.find().limit(1)
+
+
+MongoDB Skip() 方法
+>db.COLLECTION_NAME.find().limit(NUMBER).skip(NUMBER)
+> db.mycol.find().limit(1).skip(1)
+
+
+MongoDB sort() 方法
+>db.COLLECTION_NAME.find().sort({KEY:1})
+> db.mycol.find().sort({"key":1})
+{ "_id" : ObjectId("5d7a3bbb647923e0acb4fef7"), "title" : "Monto", "key" : "val1" }
+{ "_id" : ObjectId("5d7a3bbe647923e0acb4fef8"), "title" : "mongo", "key" : "val2" }
+> db.mycol.find().sort({"key":-1})
+{ "_id" : ObjectId("5d7a3bbe647923e0acb4fef8"), "title" : "mongo", "key" : "val2" }
+{ "_id" : ObjectId("5d7a3bbb647923e0acb4fef7"), "title" : "Monto", "key" : "val1" }
+
+
+MongoDB 索引
+
+
+

@@ -2,5 +2,155 @@ heml-cli install
 https://github.com/helm/helm/releases 
 下载二进制文件 mv bin/xxx /usr/local/bin/
 
-heml tiller install 
+helm tiller install 
+先将网络打通
+helm init 初始化，会安装tiller
+tiller是启动了个pod
+kubectl get po -A | grep tiller 
+
+helm list 
+Error: configmaps is forbidden: User "system:serviceaccount:kube-system:default" cannot l$ist resource "configmaps" in API group "" in the namespace "kube-system"
+helm list 时报错没权限
+需创建用户
+kubectl create serviceaccount --namespace kube-system tiller
+kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'      
+helm init --service-account tiller --upgrade
+
+安装完成
+
+helm install stable/mysql 
+安装一个官方稳定的mysql
+NAME:   unhinged-bronco
+LAST DEPLOYED: Fri Sep  6 10:59:55 2019
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+==> v1/ConfigMap
+NAME                        DATA  AGE
+unhinged-bronco-mysql-test  1     0s
+
+==> v1/PersistentVolumeClaim
+NAME                   STATUS   VOLUME  CAPACITY  ACCESS MODES  STORAGECLASS  AGE
+unhinged-bronco-mysql  Pending  0s
+
+==> v1/Pod(related)
+NAME                                    READY  STATUS   RESTARTS  AGE
+unhinged-bronco-mysql-7bcf754746-mwvgz  0/1    Pending  0         0s
+
+==> v1/Secret
+NAME                   TYPE    DATA  AGE
+unhinged-bronco-mysql  Opaque  2     0s
+
+==> v1/Service
+NAME                   TYPE       CLUSTER-IP    EXTERNAL-IP  PORT(S)   AGE
+unhinged-bronco-mysql  ClusterIP  10.96.82.250  <none>       3306/TCP  0s
+
+==> v1beta1/Deployment
+NAME                   READY  UP-TO-DATE  AVAILABLE  AGE
+unhinged-bronco-mysql  0/1    1           0          0s
+
+
+NOTES:
+MySQL can be accessed via port 3306 on the following DNS name from within your cluster:
+unhinged-bronco-mysql.default.svc.cluster.local
+
+To get your root password run:
+
+    MYSQL_ROOT_PASSWORD=$(kubectl get secret --namespace default unhinged-bronco-mysql -o jsonpath="{.data.mysql-root-password}" | base64 --decode; echo)
+
+To connect to your database:
+
+1. Run an Ubuntu pod that you can use as a client:
+
+    kubectl run -i --tty ubuntu --image=ubuntu:16.04 --restart=Never -- bash -il
+
+2. Install the mysql client:
+
+    $ apt-get update && apt-get install mysql-client -y
+
+3. Connect using the mysql cli, then provide your password:
+    $ mysql -h unhinged-bronco-mysql -p
+
+To connect to your database directly from outside the K8s cluster:
+    MYSQL_HOST=127.0.0.1
+    MYSQL_PORT=3306
+
+    # Execute the following command to route the connection:
+    kubectl port-forward svc/unhinged-bronco-mysql 3306
+
+    mysql -h ${MYSQL_HOST} -P${MYSQL_PORT} -u root -p${MYSQL_ROOT_PASSWORD}
+
+Helm 将 charts 安装到 Kubernetes 中，每个安装创建一个新 release 。要找到新的 chart，可以搜索 Helm charts 存储库 repositories。
+
+helm search 列出所有可用chart
+helm search chart_name 搜索指定名字的chart
+helm inspect chart_name 查看描述
+helm install chart_name 安装
+helm status
+
+
+helm安装rook组件 支持数据卷
+helm install --namespace rook-ceph-system rook-beta/rook-ceph --name rook-ceph
+
+helm install mysql后
+kubectl get po 看到是padding的，看描述是pvc没找到pv
+需要手动安pv, 指定调用pvc
+  claimRef:
+    namespace: default
+    name: innocent-quetzal-mysql
+
+证书：
+生成证书
+openssl genrsa -out ./ca.key.pem 4096
+openssl req -key ca.key.pem -new -x509 -days 7300 -sha256 -out ca.cert.pem -extensions v3_ca 
+
+➜  ~ openssl genrsa -out ./ca.key.pem 4096
+Generating RSA private key, 4096 bit long modulus (2 primes)
+......................................................................................++++
+..........................................................................++++
+e is 65537 (0x010001)
+➜  ~ openssl req -key ca.key.pem -new -x509 -days 7300 -sha256 -out ca.cert.pem -extensions v3_ca
+Can't load /home/cqg/.rnd into RNG
+140380977344960:error:2406F079:random number generator:RAND_load_file:Cannot open file:../crypto/rand/randfile.c:88:Filename=/home/cqg/.rnd
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [AU]:US
+State or Province Name (full name) [Some-State]:CO
+Locality Name (eg, city) []:Boulder
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:tiller
+Organizational Unit Name (eg, section) []:
+Common Name (e.g. server FQDN or YOUR name) []:tiller
+Email Address []:tiller@example.com
+➜  ~ ls ca*
+/home/cqg
+ca.cert.pem  ca.key.pem
+
+
+Tiller 密钥
+openssl genrsa -out ./tiller.key.pem 4096
+helm  密钥
+openssl genrsa -out ./helm.key.pem 4096
+
+接下来，我们需要从这些密钥创建证书。对于每个证书，这有两个步骤，创建 CSR，然后创建证书。
+openssl req -key tiller.key.pem -new -sha256 -out tiller.csr.pem
+
+openssl req -key helm.key.pem -new -sha256 -out helm.csr.pem
+
+现在我们使用我们创建的 CA 证书对每个 CSR 进行签名（调整 days 参数以满足你的要求）：
+openssl x509 -req -CA ca.cert.pem -CAkey ca.key.pem -CAcreateserial -in tiller.csr.pem -out tiller.cert.pem -days 365
+openssl x509 -req -CA ca.cert.pem -CAkey ca.key.pem -CAcreateserial -in helm.csr.pem -out helm.cert.pem  -days 365
+
+
+
+
+
+
+
 
