@@ -1,0 +1,67 @@
+
+st:whoami.docker.localhost http://127.0.0.1
+
+vim docker-compose.yaml
+version: '3'
+
+services:
+  reverse-proxy:
+    # The official v2.0 Traefik docker image
+    image: traefik:v2.0
+    # Enables the web UI and tells Traefik to listen to docker
+    command: --api.insecure=true --providers.docker
+    ports:
+      # The HTTP port
+      - "800:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+
+$ docker-compose up -d reverse-proxy
+
+$ curl http://localhost:8080/api/rawdata
+可以看服务发现情况
+
+添加一个服务, 在docker-compose.yaml后加上
+# step 2
+# ...
+  whoami:
+    # A container that exposes an API to show its IP address
+    image: containous/whoami
+    labels:
+      - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
+$ docker-compose up -d whoami
+
+$ curl http://localhost:8080/api/rawdata
+可以看到service多发现一个
+
+添加的whoami的web服务可以访问
+curl -H Host:whoami.docker.localhost http://127.0.0.1:800
+
+
+docker-compose up -d --scale whoami=2
+
+curl -H Host:whoami.docker.localhost http://127.0.0.1:800
+
+for i in {1..100}; do curl -sH Host:whoami.docker.localhost http://127.0.0.1:800 | sed -n '3p'; done
+结果会轮流访问两个service
+
+github release下载traefik 二进制文件
+traefik --configfile 配置文件启动
+
+中间件部分：
+basic-auth:
+    加密策略如下：
+    用户名和密码用:合并，将合并后的字符串使用BASE64加密为密文，每次请求时，将密文附于请求头中，服务器接收此密文，进行解析，判断是否认证
+    缺点:
+    Authorization: Basic base64(username:password)
+    HTTP基本认证的目标是提供简单的用户验证功能，其认证过程简单明了，适合于对安全性要求不高的系统或设备中，如大家所用路由器的配置页面的认证，几乎都采取了这种方式。其缺点是没有灵活可靠的认证策略，另外，BASE64的加密强度非常低，直接能在请求头中看到，几乎相当于明文了。
+ForwardAuth:
+
+IPWhiteList：
+
+
+
+

@@ -1,0 +1,74 @@
+改变replicas
+kubectl scale deployment nginx-deployment --replicas=4
+
+直接修改deployment 不用apply,自动响应
+kubectl edit deployment nginx-deployment
+
+还可以直接set，不用进入编辑界面
+kubectl set image deployment/nginx-deployment nginx=nginx:1.91
+设置一个错误的镜像
+➜  k8s git:(master) ✗ kubectl get rs
+NAME                              DESIRED   CURRENT   READY   AGE
+nginx-deployment-6875859965       2         2         0       14s
+nginx-deployment-6f859b4555       3         3         3       15m
+nginx-deployment-866db7dfdf       0         0         0       9m20s
+
+创建deployment的时候加上--record， 后面就能记录rollout history
+➜  k8s git:(master) ✗ kubectl create -f nginx-deploy.yaml --record
+deployment.apps/nginx-deployment created
+
+如果set或edit错了之后就可以通过rollout undo 进行回滚
+➜  k8s git:(master) ✗ kubectl rollout undo deployment nginx-deployment
+deployment.extensions/nginx-deployment rolled back
+
+rollout history查看版本
+➜  k8s git:(master) ✗ kubectl rollout history deployment nginx-deployment 
+deployment.extensions/nginx-deployment 
+REVISION  CHANGE-CAUSE
+1         kubectl create --filename=nginx-deploy.yaml --record=true
+2         kubectl create --filename=nginx-deploy.yaml --record=true
+
+rollout pause 可以暂停deployment，在edit或者set修改过deployment之后执行resume时，才生效一次。
+➜  k8s git:(master) ✗ kubectl rollout pause deployment nginx-deployment
+deployment.extensions/nginx-deployment paused
+此时再edit，或set改变deployment不会生效到pod中，需要resume一次
+➜  k8s git:(master) ✗ kubectl rollout resume deployment nginx-deployment
+deployment.extensions/nginx-deployment resumed
+
+spec.revisionHistoryLimit 字段可以控制history记录条数
+
+statefulSet 
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  serviceName: "nginx"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.9.1
+        ports:
+        - containerPort: 80
+          name: web
+
+获取容器hostname
+$ kubectl exec web-1 -- sh -c 'hostname'
+
+
+启动一次性的pod
+$ kubectl run -i --tty --image busybox dns-test --restart=Never --rm /bin/sh 
+
+StatefulSet 这个控制器的主要作用之一，就是使用 Pod 模板创建 Pod 的时候，对它们进行编号，并且按照编号顺序逐一完成创建工作。
+
+
+

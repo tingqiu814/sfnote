@@ -6,7 +6,7 @@ spec:
   selector:
     matchLabels:
       app: nginx
-  replicas: 1
+  replicas: 4
   template:
     metadata:
       labels:
@@ -22,4 +22,7 @@ spec:
             name: nginx-vol
       volumes:
       - name: nginx-vol
-        emptyDir: {}
+        hostPath: 
+          path: /mnt/hgfs/share/tips/k8s/nginx
+          type: Directory
+        #emptyDir: {}

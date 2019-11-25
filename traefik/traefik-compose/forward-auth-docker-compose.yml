@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik:1.7
+    ports:
+      - "8085:80"
+    volumes:
+      - ./traefik.toml:/traefik.toml
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  traefik-forward-auth:
+    image: thomseddon/traefik-forward-auth:2
+    environment:
+      - CLIENT_ID=your-client-id
+      - CLIENT_SECRET=your-client-secret
+      - SECRET=something-random
+      - INSECURE_COOKIE=true # Example assumes no https, do not use in production
+
+  whoami:
+    image: emilevauge/whoami:latest
+    labels:
+      - "traefik.frontend.rule=Host:whoami.mycompany.com"

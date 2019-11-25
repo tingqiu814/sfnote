@@ -1,0 +1,8 @@
+role 
+subject 对应kind为user，而k8s的api对象中没有user，其实只是一个概念。
+rolebinding 绑定关系
+
+Role 和 RoleBinding都是 namespace对象，就是必须有namespace字段设置。只作用于该namespace下。
+如果想要给所有namespace授权，那将要用到
+ClusterRole 和 ClusterRoleBinding
+

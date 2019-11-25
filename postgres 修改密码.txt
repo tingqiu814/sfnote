@@ -1,0 +1,46 @@
+sudo vim /etc/postgresql/9.5/main/pg_hba.conf
+修改下面ipv4登录md5为trust.
+
+local   all             postgres                                peer
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     peer
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            md5
+# IPv6 local connections:
+host    all             all             ::1/128                 md5
+
+重启postgressql服务。
+~$ systemctl restart postgresq
+免密码登录
+
+parallels@parallels-vm:~$ psql -U postgres -h 127.0.0.1
+psql (9.5.12)
+SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
+Type "help" for help.
+postgres=#
+
+修改密码并退出
+
+postgres=# alter user postgres with password '123';
+ALTER ROLE
+postgres=# \q
+
+修改回认证并退出： trust改为md5
+sudo vim /etc/postgresql/9.5/main/pg_hba.conf
+
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            trust
+
+重启并登陆：
+
+parallels@parallels-vm:~$ systemctl restart postgresql
+parallels@parallels-vm:~$ psql -U postgres -h 127.0.0.1
+Password for user postgres: 
+psql (9.5.12)
+SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
+Type "help" for help.
+
+(完)

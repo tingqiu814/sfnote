@@ -5,7 +5,7 @@ kubeadm 操作
 	可以先测试镜像是否拉的下来
 	kubeadm config image pull
 	查看需要的镜像列表 
-	kubeadm config image list 
+	kubeadm config images list 
 可以设置kubeadm init --config xxx.yaml 来修改镜像地址
 
 不能翻墙的话要到dockerhub的mirrorgooglecontainers去下载指定镜像，tag成需要的名。
@@ -29,9 +29,12 @@ Ready   False ... KubeletNotReady  runtime network not ready: NetworkReady=false
 # kubectl apply -f https://git.io/weave-kube-1.6
 kubectl apply -f /mnt/hgfs/share/weave-kube-1.6
 
+kubectl get nodes
+这样就ready了
 
 
 taint 标记污点使master不能部署pod
+# kubectl taint node cqg-virtual-machine foo=bar:NoSchedule
 # kubectl taint nodes node1 foo=bar:NoSchedule
 # kubectl taint nodes --all node-role.kubernetes.io/master-
 
@@ -53,9 +56,21 @@ $ kubectl apply -f /mnt/hgfs/share/tips/operator.yaml
 
 $ wget https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/cluster.yaml
 $ kubectl apply -f https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/cluster.yaml
+报错： no matches for kind "CephCluster"
 
 helm 安装 rook
 helm install --namespace rook-ceph-system rook-beta/rook-ceph --name rook-ceph
+
+helm ls 
+
+报错： 
+Error: configmaps is forbidden: User "system:serviceaccount:kube-system:default" cannot list resource "configmaps" in API group "" in the namespace "kube-system"
+
+解决权限问题： 
+
+kubectl create serviceaccount --namespace kube-system tiller
+kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
 
 
 
@@ -116,6 +131,28 @@ vim /lib/systemd/system/docker.service
 Environment=HTTP_PROXY=http://127.0.0.1:8123/
 Environment=HTTPS_PROXY=http://127.0.0.1:8123/
 Environment=NO_PROXY=localhost,127.0.0.1,m1empwb1.mirror.aliyuncs.com,docker.io,registry.cn-hangzhou.aliyuncs.com
+
+
+重启后
+kubectl get node 报6443端口不在
+是kubelet没起来
+systemctl status kubelet
+报错: 
+Main process exited, code=exited, status=255
+
+journalctl -xefu kubelet 查看systemd 日志
+kubelet cgroup driver: xxx is different from docker cgroup driver: xxx
+文件驱动默认由systemd改成cgroupfs, 而我们安装的docker使用的文件驱动是systemd, 造成不一致, 导致镜像无法启动
+docker info | grep Cgroup 
+group Driver: cgroups
+修复： 
+vim /etc/docker/daemon.json
+{
+  "exec-opts": ["native.cgroupdriver=systemd"]
+}
+
+systemctl restart docker
+重试即可
 
 
 

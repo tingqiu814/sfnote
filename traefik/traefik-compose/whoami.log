@@ -1,0 +1,16 @@
+Hostname: e80a3001615c
+IP: 127.0.0.1
+IP: 172.31.0.3
+RemoteAddr: 172.31.0.2:58506
+GET / HTTP/1.1
+Host: whoami.docker.localhost
+User-Agent: curl/7.58.0
+Accept: */*
+Accept-Encoding: gzip
+X-Forwarded-For: 172.31.0.1
+X-Forwarded-Host: whoami.docker.localhost
+X-Forwarded-Port: 80
+X-Forwarded-Proto: http
+X-Forwarded-Server: 28cd8433de67
+X-Real-Ip: 172.31.0.1
+

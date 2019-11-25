@@ -1,0 +1,20 @@
+api:                                                                                                  
+  dashboard: true                                                                                     
+  insecure: true                                                                                      
+  debug: true
+entryPoints:
+  entryPoints.web:
+    address: ":800"
+  entryPoints.websecure:
+    address: ":443"
+ping: {}   
+accesslog:
+  filePath: "/tmp/traefik/logs/access.log"
+  format: "json"
+#providers:
+#  docker: {}
+# Declaring the user list
+providers:
+  file:
+    filename: /mnt/hgfs/share/tips/traefik/config-file/dynamic_conf.yml
+    watch: true
