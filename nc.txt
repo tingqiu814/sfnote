@@ -1,0 +1,33 @@
+如果遇到:
+close: Bad file descriptor
+加上 -4 参数.
+
+
+netcat(nc) 的各种操作
+扫描端口
+nc -vzu 192.168.0.1 80-90
+nc -v -z www.tianxiaohui.com 90-100
+nc -v -n -z -w 1 192.168.1.2 1-1000
+
+从客户单传文件到服务端
+服务端先起来
+nc -l 8080 > file.txt
+nc -v remote_server 8080 > localfile.txt
+
+从服务端传文件到客户端
+nc -4 -v -l 7070 < myfile.txt
+客户端可用浏览器或者 nc 命令
+nc -v www.tianxiaohui.com 7070
+
+作为代理
+
+单向代理: nc -l 12345 | nc www.google.com 80
+双向:
+mkfifo backpipe
+nc -l 12345 0<backpipe | nc www.google.com 80 1>backpipe
+
+让任何命令作为网络服务器 (网络后门)
+
+服务端: nc -4 -l -p 1234 -e /bin/sh
+客户端: nc remote_server 1234
+ls -lah

@@ -1,0 +1,19 @@
+将golang编译的二进制文件 geo 拷贝到容器的 /usr/bin/ 下面，执行显示：
+
+/usr/bin/geo help
+sh: /usr/bin/geo: not found
+查看下依赖库：
+
+# ldd /usr/bin/geo
+	/lib64/ld-linux-x86-64.so.2 (0x7f6b41f1e000)
+	libpthread.so.0 => /lib64/ld-linux-x86-64.so.2 (0x7f6b41f1e000)
+	libc.so.6 => /lib64/ld-linux-x86-64.so.2 (0x7f6b41f1e000)
+
+但是alpine没有对应的依赖库
+
+解决方案
+
+看到一个贴子，某高人给出方案：
+mkdir /lib64
+ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
+然后就可以正常工作了，原理是musl和glibc是兼容的，通过创建该符号链接修复缺少的依赖项。alpine这个5M的镜像也能满足go二进制文件的运行环境！~

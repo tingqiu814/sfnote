@@ -1,0 +1,24 @@
+Plugin 'fatih/vim-go'
+
+Plugin 'gmarik/Vundle.vim'
+
+Plugin 'scrooloose/nerdtree'
+Plugin 'fatih/vim-go'
+" 文件搜索
+Plugin 'kien/ctrlp.vim'
+" 缩进虚线
+Plugin 'Yggdroot/indentLine'
+
+Plugin 'rking/ag.vim'
+
+map <C-n> :NERDTreeToggle<CR>
+
+set expandtab
+set sw=2
+set ts=2
+set ic nu
+set paste
+filetype indent on
+
+" autocmd FileType go nmap <Leader>r :!go run %<CR>
+autocmd FileType go nmap <F5> :!go run %<CR>
