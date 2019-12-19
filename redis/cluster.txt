@@ -1,0 +1,107 @@
+
+# 主库
+docker run -it --name redis-master -d -p 6300:6300 redis redis-server --requirepass redispassword --port 6300
+docker exec -it redis-master bash
+redis-cli -a redispassword -p 6300
+config set masterauth redispassword
+
+# 从库1
+docker run -it --name redis-slave -d -p 6301:6301 redis redis-server --requirepass redispassword --port 6301
+docker exec -it redis-slave bash
+redis-cli -a redispassword -p 6301
+slaveof <master-ip> <master-port>
+config set masterauth redispassword
+
+# 从库2
+docker run -it --name redis-slave2 -d -p 6302:6302 redis redis-server --requirepass redispassword --port 6302
+docker exec -it redis-slave2 bash
+redis-cli -a redispassword -p 6302
+slaveof <master-ip> <master-port>
+config set masterauth redispassword
+
+在master上使用info Replication 查看进群状态
+127.0.0.1:6300> info Replication                                                                      
+# Replication                                                                                         
+role:master                                                                                           
+connected_slaves:2                                                                                    
+slave0:ip=127.0.0.1,port=6301,state=online,offset=378,lag=1                                           
+slave1:ip=127.0.0.1,port=6302,state=online,offset=378,lag=1                                           
+master_replid:a550c16e7da3167c7367cce370f6844ec48315a6                                                
+master_replid2:0000000000000000000000000000000000000000                                               
+master_repl_offset:378                                                                                
+second_repl_offset:-1                                                                                 
+repl_backlog_active:1                                                                                 
+repl_backlog_size:1048576                                                                             
+repl_backlog_first_byte_offset:1                                                                      
+repl_backlog_histlen:378         
+
+// 哨兵模式官方配置文件
+wget http://download.redis.io/redis-stable/sentinel.conf
+
+修改配置
+# mymaster:自定义集群名，如果需要监控多个redis集群，只需要配置多次并定义不同的<master-name> <master-redis-ip>:主库ip <master-redis-port>:主库port <quorum>:最小投票数，由于有三台redis-sentinel实例，所以可以设置成2
+sentinel monitor mymaster <master-redis-ip> <master-redis-port> <quorum>
+
+# 注：redis主从库搭建的时候，要么都不配置密码(这样下面这句也不需要配置)，不然都需要设置成一样的密码
+sentinel auth-pass mymaster redispassword
+
+# 添加后台运行
+daemonize yes
+
+复制出3个文件
+sentinel1.conf,sentinel2.conf和sentinel3.conf，再次编辑修改port为26000,26001和26002.
+
+启动： 
+redis-sentinel /path/to/sentinel.conf
+
+
+
+
+
+
+redis 4.0.9版本不支持。
+安装最新版redis
+$ wget http://download.redis.io/releases/redis-5.0.7.tar.gz
+$ tar xzf redis-5.0.7.tar.gz
+$ cd redis-5.0.7
+$ make
+
+src/redis-server
+src/redis-cli
+
+cp redis-benchmark redis-check-aof redis-check-rdb redis-cli redis-sentinel redis-server /usr/bin
+
+redis-server --requirepass redispassword --port 6300 2>&1 >> redis-server-6300.log & 
+echo "config set masterauth redispassword" | redis-cli -a redispassword -p 6300
+
+redis-server --requirepass redispassword --port 6301 2>&1 >> redis-server-6301.log & 
+echo "slaveof  127.0.0.1 6300" | redis-cli -a redispassword -p 6301
+echo "config set masterauth redispassword" | redis-cli -a redispassword -p 6301
+
+redis-server --requirepass redispassword --port 6302 2>&1 >> redis-server-6302.log & 
+echo "slaveof  127.0.0.1 6300" | redis-cli -a redispassword -p 6302
+echo "config set masterauth redispassword" | redis-cli -a redispassword -p 6302
+
+sleep 1
+# 启动哨兵
+redis-sentinel sentinel1.conf
+redis-sentinel sentinel2.conf
+redis-sentinel sentinel3.conf
+
+
+# 使用redis-sentinel API查看监控状况:
+redis-cli -p 26000
+sentinel master mymaster 或 sentinel slaves mymaster
+
+可以看到num_slave 2
+
+测试master 休眠60s
+redis-cli -a redispassword -p 6300 DEBUG sleep 60
+
+进入redis-slave或redis-slave2容器，查看info Replication，可以看到master已经完成了切换。
+redis-cli -a redispassword -p 6302 info replication 
+可以看到已经有从库自动切换未主库
+
+
+
+
