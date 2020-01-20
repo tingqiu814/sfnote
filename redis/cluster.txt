@@ -102,6 +102,8 @@ redis-cli -a redispassword -p 6300 DEBUG sleep 60
 redis-cli -a redispassword -p 6302 info replication 
 可以看到已经有从库自动切换未主库
 
+echo monitor | redis-cli -a redispassword -p 6300 | grep -v "PING\|hello\|INFO"
+
 
 
 

@@ -1,0 +1,26 @@
+1. 先安装依赖：
+sudo apt-get install curl openssh-server ca-certificates postfix
+2. 官方建议使用脚本安装：
+# sudo curl -sS https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh | sudo bash
+# sudo apt-get install gitlab-ce
+# curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh | sudo bash
+# EXTERNAL_URL="http://gl.sfai.com" apt-get install gitlab-ee
+手动下载 
+https://packages.gitlab.com/gitlab/gitlab-ee/packages/ubuntu/bionic/gitlab-ee_12.3.8-ee.0_amd64.deb
+
+dpkg -i gitlab-ee_12.3.8-ee.0_amd64.deb
+安装后可以去/etc/gitlab/gitlab.rb 修改域名
+Please configure a URL for your GitLab instance by setting `external_url`
+configuration in /etc/gitlab/gitlab.rb file.
+Then, you can start your GitLab instance by running the following command:
+  sudo gitlab-ctl reconfigure
+ee 是企业版 Enterprise Edition
+ce 是社区版 Community Edition
+
+
+vim /etc/gitlab/gitlab.rb
+external_url 'http://gitlab.local.com'
+gitlab-ctl reconfigure        #重新加载配置
+
+
+

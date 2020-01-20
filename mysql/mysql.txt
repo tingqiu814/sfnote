@@ -32,6 +32,7 @@ FIELDS TERMINATED BY ','：指定字段分隔符
 OPTIONALLY ENCLOSED BY '"'：认为双引号中的是一个独立的字段。Excel 转 CSV 时，有特殊字符（逗号、顿号等）的字段，会自动用双引号引起来
 LINES TERMINATED BY '\n'：指定行分隔符，注意，在 Windows 平台上创建的文件，分隔符是 '\r\n'
 
+
 乱码问题
 SHOW VARIABLES LIKE 'character%';
 
@@ -47,6 +48,27 @@ delete语句删除数据在该行标记"可复用"
 在delete语句时可能造成数据页中存在空洞
 这种空洞在insert时也有可能出现（在插入时页分裂时会造成空洞）
 所以重建表实际上是建立个临时表，将数据写入再替换，5.6之后可以支持online操作，就是加了个对原表修改的redolog。
+
+统计mysql库中所有表的数据条数：
+select table_name,table_rows from information_schema.tables where TABLE_SCHEMA = "databasename" order by table_rows asc;
+
+导出csv
+select * from tablename into outfile '/var/lib/mysql-files/out.csv' fields terminated by ',' optionally enclosed by '"' lines terminated by '\n';
+以','分割
+双引号转义
+
+查看general_log 配置
+show global variables like '%general%';
+开启general_log
+mysql>set global general_log_file='/tmp/general.lg';    #设置路径
+mysql>set global general_log=on;    # 开启general log模式
+
+mysql授权
+grant all privileges on *.* to 'root'@'192.168.237.128' identified by '123456'；
+刷新权限
+flush privileges;
+
+
 
 
 
