@@ -217,7 +217,35 @@ select * from t where id=1 lock in share mode;
 | select * from t where id=1; | |
 | select * from t where id=1 lock in share mode; |  |
 
+在sessionA中开启了事务，查询时会按照最新版调用undolog，一条条回退。而lock in share mode则直接取最新数据；
 
+
+create table table_a (`id` int(11) not null , `b` varchar(10) default null, primary key (`id`), key `b` (`b`) ) engine=innodb;
+
+幻读定义： 
+在一个事务中，同一个查询，后一次查询看到前一次查询没看到的行。
+一个事务在前后两次查询同一个范围的时候，后一次查询看到前一次查询没看到的行。
+幻读会造成的问题：
+1. 第一个查询加锁的语意被破坏；(由于只锁查询命中的行，不能锁update过符合条件的行)
+2. 数据binlog顺序会乱，导致数据不一致；（如果只锁相关的一行数据，那么update成符合查询条件的行/新增符合条件的行这两种情况是不能被锁住；会导致数据不一致； 所以引入查询相关的行都锁住，再加间隙锁，防止新增的数据）
+
+查询加锁时，如果条件没有使用索引，那将会锁全表
+使用主键查询的话只会锁相关的行
+
+innodb 可重复读隔离级别解决幻读问题时引入了间隙所(gap lock)
+sessionA 
+begin; select * from t where c=5 for update;
+此时创建了与查询相关的行锁和间隙锁
+间隙锁是开区间；
+间隙锁和行锁合称next-key lock
+next-key lock: 左开右闭的区间；
+
+select * from t where c>=15 and c<=20 for update; 
+next-key lock: (10,15], (15,20]
+gap key: (20, 25)
+
+
+sessionB
 
 
 
